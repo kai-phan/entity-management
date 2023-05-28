@@ -1,13 +1,12 @@
 import '../src/usage';
 
-import { QueryClient, QueryClientProvider } from 'react-query';
+import { QueryClientProvider } from 'react-query';
 import TodoList from './test/Todo';
-
-const queryClient = new QueryClient();
+import { QueryAdapter } from './usage';
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
+    <QueryClientProvider client={QueryAdapter.queryClient}>
       <TodoList />
     </QueryClientProvider>
   );

@@ -1,26 +1,28 @@
-import {
-  EntityBase,
-  ReactQueryAdapter,
-  createAxiosStatic,
-  ThisConstructor,
-  This,
-  Manipulation,
-} from '../ultil';
 import { Mixin } from 'ts-mixer';
 import { UseQueryOptions } from 'react-query';
 import { AxiosError } from 'axios';
 import { QueryFunctionContext } from 'react-query/types/core/types';
 
-const AxiosBase = createAxiosStatic({
+import {
+  EntityBase,
+  createAxiosStatic,
+  ThisConstructor,
+  This,
+  createReactQueryAdapter,
+} from '../ultil';
+
+export const AxiosStatic = createAxiosStatic({
   baseURL: 'https://jsonplaceholder.typicode.com',
 });
 
-export class Entity extends Mixin(
-  EntityBase,
-  AxiosBase,
-  ReactQueryAdapter,
-  Manipulation,
-) {
+export const QueryAdapter = createReactQueryAdapter({
+  queries: {
+    retry: false,
+    refetchOnMount: false,
+  },
+});
+
+export class Entity extends Mixin(EntityBase, AxiosStatic, QueryAdapter) {
   static getKey(): [string];
   static getKey<Params>(params: Params): [string, Params];
   static getKey<Params>(params?: Params): [string, Params] | [string] {
@@ -64,8 +66,6 @@ export class Entity extends Mixin(
     return this.useQuery({
       queryKey: [this.endpoint, variables as Params],
       queryFn: this.queryListFn.bind(this),
-      refetchOnMount: false,
-      retry: false,
       ...options,
     });
   }
@@ -83,31 +83,27 @@ export class Entity extends Mixin(
       variables?: Path;
     },
   ) {
-    const { variables } = options ?? {};
-
     return this.useQuery({
-      queryKey: [this.endpoint, variables as Path],
+      queryKey: [this.endpoint, options?.variables as Path],
       queryFn: this.queryOneFn.bind(this),
-      refetchOnMount: false,
-      retry: false,
       ...options,
     });
   }
 
-  useMutation<I extends This<typeof Entity>>(this: I) {
-    const { config, endpoint, put } = this.constructor as ThisConstructor<
-      typeof Entity
-    >;
-
-    return (this.constructor as ThisConstructor<typeof Entity>).useMutation({
-      mutationFn: async (variables) => {
-        const { data } = await put(endpoint, variables, config);
-
-        return (this.constructor as ThisConstructor<typeof Entity>).createOne(
-          data,
-        );
-      },
-      ...config,
-    });
-  }
+  // useMutation<I extends This<typeof Entity>>(this: I) {
+  //   const { config, endpoint, put } = this.constructor as ThisConstructor<
+  //     typeof Entity
+  //   >;
+  //
+  //   return (this.constructor as ThisConstructor<typeof Entity>).useMutation({
+  //     mutationFn: async (variables) => {
+  //       const { data } = await put(endpoint, variables, config);
+  //
+  //       return (this.constructor as ThisConstructor<typeof Entity>).createOne(
+  //         data,
+  //       );
+  //     },
+  //     ...config,
+  //   });
+  // }
 }

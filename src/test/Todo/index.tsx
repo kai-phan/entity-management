@@ -19,7 +19,7 @@ export class Todo extends Entity {
 const TodoList: React.FC<Props> = () => {
   const { data } = Todo.useQueryOne({ variables: 1 });
 
-  console.log(data?.useMutation());
+  console.log(data);
 
   return <React.Fragment></React.Fragment>;
 };
