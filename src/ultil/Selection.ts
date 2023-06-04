@@ -31,6 +31,12 @@ export class Selection<T> {
     return [...this._selectedKeys];
   }
 
+  get selectedItems() {
+    return this._items.filter((item) =>
+      this._selectedKeys.includes(this.selectFunction(item)),
+    );
+  }
+
   set notify(
     notifier: (selectedKeys: ReturnType<SelectFunction<T>>[]) => void,
   ) {
