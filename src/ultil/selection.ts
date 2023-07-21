@@ -1,19 +1,13 @@
 import React from 'react';
 
-export type SelectFunction<T> = (
-  item: T,
-) => T extends string | number
-  ? T
-  : keyof T extends string | number
-  ? T[keyof T]
-  : never;
+export type SelectFunction<T, K> = (item: T) => K;
 
-export class Selection<T> {
-  private _selectedKeys: ReturnType<SelectFunction<T>>[] = [];
-  private _notify: (selectedKeys: ReturnType<SelectFunction<T>>[]) => void;
+export class Selection<T, K> {
+  private _selectedKeys: K[] = [];
+  private _notify: (selectedKeys: K[]) => void;
   constructor(
     protected _items: T[],
-    private selectFunction: SelectFunction<T>,
+    private selectFunction: SelectFunction<T, K>,
   ) {
     // eslint-disable-next-line @typescript-eslint/no-empty-function
     this._notify = () => {};
@@ -24,7 +18,7 @@ export class Selection<T> {
     this._items = items;
   }
 
-  set selectedKeys(keys: ReturnType<SelectFunction<T>>[]) {
+  set selectedKeys(keys: ReturnType<SelectFunction<T, K>>[]) {
     this._selectedKeys = keys;
   }
   get selectedKeys() {
@@ -38,7 +32,7 @@ export class Selection<T> {
   }
 
   set notify(
-    notifier: (selectedKeys: ReturnType<SelectFunction<T>>[]) => void,
+    notifier: (selectedKeys: ReturnType<SelectFunction<T, K>>[]) => void,
   ) {
     this._notify = notifier;
   }
@@ -48,7 +42,7 @@ export class Selection<T> {
     return this._items.includes(item);
   }
 
-  hasKey(key: ReturnType<SelectFunction<T>>) {
+  hasKey(key: K) {
     return this._items.some((item) => this.selectFunction(item) === key);
   }
 
@@ -65,25 +59,25 @@ export class Selection<T> {
     return this._selectedKeys.includes(this.selectFunction(item));
   }
 
-  isKeySelected(key: ReturnType<SelectFunction<T>>) {
+  isKeySelected(key: K) {
     return this._selectedKeys.includes(key);
   }
 
-  isPartialItemSelected(item: Partial<T>) {
-    return this._selectedKeys.some((key) => {
-      for (const k in item) {
-        if (item[k] === key) return true;
-      }
-      return false;
+  isPartialItemSelected(subItem: Partial<T>) {
+    return this.selectedItems.some((item) => {
+      return Object.keys(subItem).every((key) => {
+        const k = key as keyof T;
+        return item[k] === subItem[k];
+      });
     });
   }
 
   getPartialItem(item: Partial<T>) {
     return this._items.find((i) => {
-      for (const key in item) {
-        if (i[key] !== item[key]) return false;
-      }
-      return true;
+      return Object.keys(item).every((key) => {
+        const k = key as keyof T;
+        return i[k] === item[k];
+      });
     });
   }
 
@@ -101,7 +95,7 @@ export class Selection<T> {
     return this;
   }
 
-  selectKey(key: ReturnType<SelectFunction<T>>) {
+  selectKey(key: K) {
     if (this.hasKey(key) && !this.isKeySelected(key)) {
       this._selectedKeys.push(key);
     }
@@ -134,7 +128,7 @@ export class Selection<T> {
     return this;
   }
 
-  unselectKey(key: ReturnType<SelectFunction<T>>) {
+  unselectKey(key: K) {
     if (this.hasKey(key) && this.isKeySelected(key)) {
       this._selectedKeys = this._selectedKeys.filter((k) => k !== key);
     }
@@ -169,7 +163,7 @@ export class Selection<T> {
     return this;
   }
 
-  toggleKey(key: ReturnType<SelectFunction<T>>) {
+  toggleKey(key: K) {
     if (this.isKeySelected(key)) {
       this.unselectKey(key);
     } else {
@@ -200,7 +194,7 @@ export class Selection<T> {
   }
 
   isNoneSelected() {
-    return this._items.every((item) => !this.isItemSelected(item));
+    return !this.isAllSelected();
   }
 
   selectAll() {
@@ -230,10 +224,10 @@ export class Selection<T> {
   }
 }
 
-export const useSelection = <T>(
+export const useSelection = <T, K, V extends K>(
   items: T[],
-  selectFunction: SelectFunction<T>,
-  defaultSelectedKeys: ReturnType<SelectFunction<T>>[] = [],
+  selectFunction: SelectFunction<T, K>,
+  defaultSelectedKeys?: V[],
 ) => {
   const selectionRef = React.useRef(new Selection(items, selectFunction));
   const selection = selectionRef.current;
